@@ -64,7 +64,8 @@ if [ -n "$target" ]; then
 		errcho "Consider flashing with QMK Toolbox (https://github.com/qmk/qmk_toolbox) instead"
 		exit 3
 	else
-		usb_args="--privileged -v /dev:/dev"
+		privilege="--privileged"
+		usb_args="-v /dev:/dev"
 	fi
 fi
 dir=$(pwd -W 2>/dev/null) || dir=$PWD  # Use Windows path if on Windows
@@ -73,8 +74,14 @@ if [ "$RUNTIME" = "docker" ]; then
 	uid_arg="--user $(id -u):$(id -g)"
 fi
 
+if command -v sestatus >/dev/null 2>&1; then  # Use --privileged if SELinux is present
+	privilege="--privileged"
+fi
+
 # Run container and build firmware
-"$RUNTIME" run --rm -it $usb_args \
+"$RUNTIME" run --rm -it \
+	$privilege \
+	$usb_args \
 	$uid_arg \
 	-w /qmk_firmware \
 	-v "$dir":/qmk_firmware \
